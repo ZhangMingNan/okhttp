@@ -419,8 +419,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
       proxySelector = ProxySelector.getDefault();
 
       socketFactory = SocketFactory.getDefault();
-      proxyAuthenticator = Authenticator.NONE;
-      authenticator = Authenticator.NONE;
+
       connectionPool = new ConnectionPool();
       dns = Dns.SYSTEM;
       followSslRedirects = true;
@@ -617,29 +616,8 @@ public class OkHttpClient implements Cloneable, Call.Factory {
 
 
 
-    /**
-     * Sets the authenticator used to respond to challenges from origin servers. Use {@link
-     * #proxyAuthenticator} to set the authenticator for proxy servers.
-     *
-     * <p>If unset, the {@linkplain Authenticator#NONE no authentication will be attempted}.
-     */
-    public Builder authenticator(Authenticator authenticator) {
-      if (authenticator == null) throw new NullPointerException("authenticator == null");
-      this.authenticator = authenticator;
-      return this;
-    }
 
-    /**
-     * Sets the authenticator used to respond to challenges from proxy servers. Use {@link
-     * #authenticator} to set the authenticator for origin servers.
-     *
-     * <p>If unset, the {@linkplain Authenticator#NONE no authentication will be attempted}.
-     */
-    public Builder proxyAuthenticator(Authenticator proxyAuthenticator) {
-      if (proxyAuthenticator == null) throw new NullPointerException("proxyAuthenticator == null");
-      this.proxyAuthenticator = proxyAuthenticator;
-      return this;
-    }
+
 
     /**
      * Sets the connection pool used to recycle HTTP and HTTPS connections.

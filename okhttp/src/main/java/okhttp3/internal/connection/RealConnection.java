@@ -350,15 +350,6 @@ public final class RealConnection implements Connection {
                     }
                     return null;
 
-                case HTTP_PROXY_AUTH:
-                    tunnelRequest = route.address().proxyAuthenticator().authenticate(route, response);
-                    if (tunnelRequest == null) throw new IOException("Failed to authenticate with proxy");
-
-                    if ("close".equalsIgnoreCase(response.header("Connection"))) {
-                        return tunnelRequest;
-                    }
-                    break;
-
                 default:
                     throw new IOException(
                             "Unexpected response code for CONNECT: " + response.code());

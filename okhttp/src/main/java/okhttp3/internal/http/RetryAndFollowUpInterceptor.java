@@ -194,7 +194,7 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
     }
 
     return new Address(url.host(), url.port(), client.dns(), client.socketFactory(),
-        sslSocketFactory, hostnameVerifier, client.proxyAuthenticator(),
+        sslSocketFactory, hostnameVerifier,
         client.proxy(), client.protocols(), client.connectionSpecs(), client.proxySelector());
   }
 
@@ -268,18 +268,6 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
 
     final String method = userResponse.request().method();
     switch (responseCode) {
-      case HTTP_PROXY_AUTH:
-        Proxy selectedProxy = route != null
-            ? route.proxy()
-            : client.proxy();
-        if (selectedProxy.type() != Proxy.Type.HTTP) {
-          throw new ProtocolException("Received HTTP_PROXY_AUTH (407) code while not using proxy");
-        }
-        return client.proxyAuthenticator().authenticate(route, userResponse);
-
-      case HTTP_UNAUTHORIZED:
-        return client.authenticator().authenticate(route, userResponse);
-
       case HTTP_PERM_REDIRECT:
       case HTTP_TEMP_REDIRECT:
         // "If the 307 or 308 status code is received in response to a request other than GET

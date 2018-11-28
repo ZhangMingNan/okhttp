@@ -39,7 +39,7 @@ public final class Address {
   final HttpUrl url;
   final Dns dns;
   final SocketFactory socketFactory;
-  final Authenticator proxyAuthenticator;
+
   final List<Protocol> protocols;
   final List<ConnectionSpec> connectionSpecs;
   final ProxySelector proxySelector;
@@ -50,7 +50,6 @@ public final class Address {
 
   public Address(String uriHost, int uriPort, Dns dns, SocketFactory socketFactory,
       @Nullable SSLSocketFactory sslSocketFactory, @Nullable HostnameVerifier hostnameVerifier,
-       Authenticator proxyAuthenticator,
       @Nullable Proxy proxy, List<Protocol> protocols, List<ConnectionSpec> connectionSpecs,
       ProxySelector proxySelector) {
     this.url = new HttpUrl.Builder()
@@ -65,10 +64,7 @@ public final class Address {
     if (socketFactory == null) throw new NullPointerException("socketFactory == null");
     this.socketFactory = socketFactory;
 
-    if (proxyAuthenticator == null) {
-      throw new NullPointerException("proxyAuthenticator == null");
-    }
-    this.proxyAuthenticator = proxyAuthenticator;
+
 
     if (protocols == null) throw new NullPointerException("protocols == null");
     this.protocols = Util.immutableList(protocols);
@@ -103,10 +99,7 @@ public final class Address {
     return socketFactory;
   }
 
-  /** Returns the client's proxy authenticator. */
-  public Authenticator proxyAuthenticator() {
-    return proxyAuthenticator;
-  }
+
 
   /**
    * Returns the protocols the client supports. This method always returns a non-null list that
@@ -157,7 +150,7 @@ public final class Address {
     int result = 17;
     result = 31 * result + url.hashCode();
     result = 31 * result + dns.hashCode();
-    result = 31 * result + proxyAuthenticator.hashCode();
+
     result = 31 * result + protocols.hashCode();
     result = 31 * result + connectionSpecs.hashCode();
     result = 31 * result + proxySelector.hashCode();
@@ -169,7 +162,6 @@ public final class Address {
 
   boolean equalsNonHost(Address that) {
     return this.dns.equals(that.dns)
-        && this.proxyAuthenticator.equals(that.proxyAuthenticator)
         && this.protocols.equals(that.protocols)
         && this.connectionSpecs.equals(that.connectionSpecs)
         && this.proxySelector.equals(that.proxySelector)
