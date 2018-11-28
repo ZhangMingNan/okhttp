@@ -18,15 +18,14 @@ package okhttp3.internal.http;
 
 import java.io.IOException;
 import java.util.List;
-import okhttp3.Cookie;
-import okhttp3.CookieJar;
+
 import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import okhttp3.internal.Version;
+import okhttp3.internal.connection.Version;
 import okio.GzipSource;
 import okio.Okio;
 
@@ -38,11 +37,6 @@ import static okhttp3.internal.Util.hostHeader;
  * response.
  */
 public final class BridgeInterceptor implements Interceptor {
-  private final CookieJar cookieJar;
-
-  public BridgeInterceptor(CookieJar cookieJar) {
-    this.cookieJar = cookieJar;
-  }
 
   @Override public Response intercept(Chain chain) throws IOException {
     Request userRequest = chain.request();
@@ -81,18 +75,11 @@ public final class BridgeInterceptor implements Interceptor {
       requestBuilder.header("Accept-Encoding", "gzip");
     }
 
-    List<Cookie> cookies = cookieJar.loadForRequest(userRequest.url());
-    if (!cookies.isEmpty()) {
-      requestBuilder.header("Cookie", cookieHeader(cookies));
-    }
-
     if (userRequest.header("User-Agent") == null) {
       requestBuilder.header("User-Agent", Version.userAgent());
     }
 
     Response networkResponse = chain.proceed(requestBuilder.build());
-
-    HttpHeaders.receiveHeaders(cookieJar, userRequest.url(), networkResponse.headers());
 
     Response.Builder responseBuilder = networkResponse.newBuilder()
         .request(userRequest);
@@ -110,19 +97,9 @@ public final class BridgeInterceptor implements Interceptor {
       responseBuilder.body(new RealResponseBody(contentType, -1L, Okio.buffer(responseBody)));
     }
 
+
+
     return responseBuilder.build();
   }
 
-  /** Returns a 'Cookie' HTTP request header with all cookies, like {@code a=b; c=d}. */
-  private String cookieHeader(List<Cookie> cookies) {
-    StringBuilder cookieHeader = new StringBuilder();
-    for (int i = 0, size = cookies.size(); i < size; i++) {
-      if (i > 0) {
-        cookieHeader.append("; ");
-      }
-      Cookie cookie = cookies.get(i);
-      cookieHeader.append(cookie.name()).append('=').append(cookie.value());
-    }
-    return cookieHeader.toString();
-  }
 }

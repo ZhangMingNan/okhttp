@@ -45,7 +45,6 @@ public final class Response implements Closeable {
   final Protocol protocol;
   final int code;
   final String message;
-  final @Nullable Handshake handshake;
   final Headers headers;
   final @Nullable ResponseBody body;
   final @Nullable Response networkResponse;
@@ -61,7 +60,7 @@ public final class Response implements Closeable {
     this.protocol = builder.protocol;
     this.code = builder.code;
     this.message = builder.message;
-    this.handshake = builder.handshake;
+
     this.headers = builder.headers.build();
     this.body = builder.body;
     this.networkResponse = builder.networkResponse;
@@ -111,13 +110,6 @@ public final class Response implements Closeable {
     return message;
   }
 
-  /**
-   * Returns the TLS handshake of the connection that carried this response, or null if the response
-   * was received without TLS.
-   */
-  public Handshake handshake() {
-    return handshake;
-  }
 
   public List<String> headers(String name) {
     return headers.values(name);
@@ -300,7 +292,7 @@ public final class Response implements Closeable {
     Protocol protocol;
     int code = -1;
     String message;
-    @Nullable Handshake handshake;
+
     Headers.Builder headers;
     ResponseBody body;
     Response networkResponse;
@@ -318,7 +310,7 @@ public final class Response implements Closeable {
       this.protocol = response.protocol;
       this.code = response.code;
       this.message = response.message;
-      this.handshake = response.handshake;
+
       this.headers = response.headers.newBuilder();
       this.body = response.body;
       this.networkResponse = response.networkResponse;
@@ -348,10 +340,7 @@ public final class Response implements Closeable {
       return this;
     }
 
-    public Builder handshake(@Nullable Handshake handshake) {
-      this.handshake = handshake;
-      return this;
-    }
+
 
     /**
      * Sets the header named {@code name} to {@code value}. If this request already has any headers

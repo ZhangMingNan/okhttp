@@ -29,7 +29,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.Route;
-import okhttp3.internal.cache.InternalCache;
+
 import okhttp3.internal.connection.RealConnection;
 import okhttp3.internal.connection.RouteDatabase;
 import okhttp3.internal.connection.StreamAllocation;
@@ -51,7 +51,7 @@ public abstract class Internal {
 
   public abstract void addLenient(Headers.Builder builder, String name, String value);
 
-  public abstract void setCache(OkHttpClient.Builder builder, InternalCache internalCache);
+
 
   public abstract RealConnection get(ConnectionPool pool, Address address,
       StreamAllocation streamAllocation, Route route);

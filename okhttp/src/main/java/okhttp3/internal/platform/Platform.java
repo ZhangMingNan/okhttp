@@ -16,6 +16,13 @@
  */
 package okhttp3.internal.platform;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
+import okio.Buffer;
+
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
@@ -24,16 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.X509TrustManager;
-import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
-import okhttp3.internal.tls.BasicCertificateChainCleaner;
-import okhttp3.internal.tls.BasicTrustRootIndex;
-import okhttp3.internal.tls.CertificateChainCleaner;
-import okhttp3.internal.tls.TrustRootIndex;
-import okio.Buffer;
 
 /**
  * Access to platform-specific features.
@@ -164,42 +161,10 @@ public class Platform {
     return names;
   }
 
-  public CertificateChainCleaner buildCertificateChainCleaner(X509TrustManager trustManager) {
-    return new BasicCertificateChainCleaner(buildTrustRootIndex(trustManager));
-  }
 
-  public CertificateChainCleaner buildCertificateChainCleaner(SSLSocketFactory sslSocketFactory) {
-    X509TrustManager trustManager = trustManager(sslSocketFactory);
-
-    if (trustManager == null) {
-      throw new IllegalStateException("Unable to extract the trust manager on " + Platform.get()
-          + ", sslSocketFactory is " + sslSocketFactory.getClass());
-    }
-
-    return buildCertificateChainCleaner(trustManager);
-  }
 
   /** Attempt to match the host runtime to a capable Platform implementation. */
   private static Platform findPlatform() {
-    Platform android = AndroidPlatform.buildIfSupported();
-
-    if (android != null) {
-      return android;
-    }
-
-    Platform jdk9 = Jdk9Platform.buildIfSupported();
-
-    if (jdk9 != null) {
-      return jdk9;
-    }
-
-    Platform jdkWithJettyBoot = JdkWithJettyBootPlatform.buildIfSupported();
-
-    if (jdkWithJettyBoot != null) {
-      return jdkWithJettyBoot;
-    }
-
-    // Probably an Oracle JDK like OpenJDK.
     return new Platform();
   }
 
@@ -241,7 +206,4 @@ public class Platform {
     return null;
   }
 
-    public TrustRootIndex buildTrustRootIndex(X509TrustManager trustManager) {
-      return new BasicTrustRootIndex(trustManager.getAcceptedIssuers());
-    }
 }

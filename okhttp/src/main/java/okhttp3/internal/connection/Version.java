@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Square, Inc.
+ * Copyright (C) 2014 Square, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package okhttp3.internal.http2;
+package okhttp3.internal.connection;
 
-import java.io.IOException;
+public final class Version {
+  public static String userAgent() {
+    return "okhttp/${project.version}";
+  }
 
-/**
- * Thrown when an HTTP/2 connection is shutdown (either explicitly or if the peer has sent a GOAWAY
- * frame) and an attempt is made to use the connection.
- */
-public final class ConnectionShutdownException extends IOException {
+  private Version() {
+  }
 }

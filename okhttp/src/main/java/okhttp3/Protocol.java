@@ -38,28 +38,7 @@ public enum Protocol {
    * <p>This version of OkHttp implements <a href="https://tools.ietf.org/html/rfc7230">RFC
    * 7230</a>, and tracks revisions to that spec.
    */
-  HTTP_1_1("http/1.1"),
-
-  /**
-   * Chromium's binary-framed protocol that includes header compression, multiplexing multiple
-   * requests on the same socket, and server-push. HTTP/1.1 semantics are layered on SPDY/3.
-   *
-   * <p>Current versions of OkHttp do not support this protocol.
-   *
-   * @deprecated OkHttp has dropped support for SPDY. Prefer {@link #HTTP_2}.
-   */
-  SPDY_3("spdy/3.1"),
-
-  /**
-   * The IETF's binary-framed protocol that includes header compression, multiplexing multiple
-   * requests on the same socket, and server-push. HTTP/1.1 semantics are layered on HTTP/2.
-   *
-   * <p>HTTP/2 requires deployments of HTTP/2 that use TLS 1.2 support {@linkplain
-   * CipherSuite#TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256} , present in Java 8+ and Android 5+. Servers
-   * that enforce this may send an exception message including the string {@code
-   * INADEQUATE_SECURITY}.
-   */
-  HTTP_2("h2");
+  HTTP_1_1("http/1.1");
 
   private final String protocol;
 
@@ -76,8 +55,6 @@ public enum Protocol {
     // Unroll the loop over values() to save an allocation.
     if (protocol.equals(HTTP_1_0.protocol)) return HTTP_1_0;
     if (protocol.equals(HTTP_1_1.protocol)) return HTTP_1_1;
-    if (protocol.equals(HTTP_2.protocol)) return HTTP_2;
-    if (protocol.equals(SPDY_3.protocol)) return SPDY_3;
     throw new IOException("Unexpected protocol: " + protocol);
   }
 

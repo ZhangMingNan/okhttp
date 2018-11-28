@@ -79,11 +79,7 @@ public interface Connection {
    */
   Socket socket();
 
-  /**
-   * Returns the TLS handshake used to establish this connection, or null if the connection is not
-   * HTTPS.
-   */
-  @Nullable Handshake handshake();
+
 
   /**
    * Returns the protocol negotiated by this connection, or {@link Protocol#HTTP_1_1} if no protocol

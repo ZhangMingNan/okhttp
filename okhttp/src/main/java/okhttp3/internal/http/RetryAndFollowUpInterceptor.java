@@ -28,7 +28,6 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocketFactory;
 import okhttp3.Address;
 import okhttp3.Call;
-import okhttp3.CertificatePinner;
 import okhttp3.Connection;
 import okhttp3.EventListener;
 import okhttp3.HttpUrl;
@@ -40,8 +39,6 @@ import okhttp3.Response;
 import okhttp3.Route;
 import okhttp3.internal.connection.RouteException;
 import okhttp3.internal.connection.StreamAllocation;
-import okhttp3.internal.http2.ConnectionShutdownException;
-
 import static java.net.HttpURLConnection.HTTP_CLIENT_TIMEOUT;
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
@@ -133,14 +130,12 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
         continue;
       } catch (IOException e) {
         // An attempt to communicate with a server failed. The request may have been sent.
-        boolean requestSendStarted = !(e instanceof ConnectionShutdownException);
-        if (!recover(e, requestSendStarted, request)) throw e;
         releaseConnection = false;
         continue;
       } finally {
         // We're throwing an unchecked exception. Release any resources.
         if (releaseConnection) {
-          streamAllocation.streamFailed(null);
+        //  streamAllocation.streamFailed(null);
           streamAllocation.release();
         }
       }
@@ -192,15 +187,14 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
   private Address createAddress(HttpUrl url) {
     SSLSocketFactory sslSocketFactory = null;
     HostnameVerifier hostnameVerifier = null;
-    CertificatePinner certificatePinner = null;
     if (url.isHttps()) {
       sslSocketFactory = client.sslSocketFactory();
       hostnameVerifier = client.hostnameVerifier();
-      certificatePinner = client.certificatePinner();
+
     }
 
     return new Address(url.host(), url.port(), client.dns(), client.socketFactory(),
-        sslSocketFactory, hostnameVerifier, certificatePinner, client.proxyAuthenticator(),
+        sslSocketFactory, hostnameVerifier, client.proxyAuthenticator(),
         client.proxy(), client.protocols(), client.connectionSpecs(), client.proxySelector());
   }
 
@@ -211,8 +205,6 @@ public final class RetryAndFollowUpInterceptor implements Interceptor {
    * sent.
    */
   private boolean recover(IOException e, boolean requestSendStarted, Request userRequest) {
-    streamAllocation.streamFailed(e);
-
     // The application layer has forbidden retries.
     if (!client.retryOnConnectionFailure()) return false;
 

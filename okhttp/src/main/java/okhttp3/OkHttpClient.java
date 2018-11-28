@@ -15,39 +15,26 @@
  */
 package okhttp3;
 
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.ProxySelector;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import okhttp3.internal.Internal;
+import okhttp3.internal.Util;
+import okhttp3.internal.connection.RealConnection;
+import okhttp3.internal.connection.RouteDatabase;
+import okhttp3.internal.connection.StreamAllocation;
+import okhttp3.internal.platform.Platform;
+
+
+import javax.annotation.Nullable;
+import javax.net.SocketFactory;
+import javax.net.ssl.*;
+import java.net.*;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nullable;
-import javax.net.SocketFactory;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-import okhttp3.internal.Internal;
-import okhttp3.internal.Util;
-import okhttp3.internal.cache.InternalCache;
-import okhttp3.internal.connection.RealConnection;
-import okhttp3.internal.connection.RouteDatabase;
-import okhttp3.internal.connection.StreamAllocation;
-import okhttp3.internal.platform.Platform;
-import okhttp3.internal.tls.CertificateChainCleaner;
-import okhttp3.internal.tls.OkHostnameVerifier;
-import okhttp3.internal.ws.RealWebSocket;
 
 import static okhttp3.internal.Util.assertionError;
 import static okhttp3.internal.Util.checkDuration;
@@ -112,9 +99,6 @@ import static okhttp3.internal.Util.checkDuration;
  *     client.connectionPool().evictAll();
  * }</pre>
  *
- * <p>If your client has a cache, call {@link Cache#close close()}. Note that it is an error to
- * create calls against a cache that is closed, and doing so will cause the call to crash.
- * <pre>   {@code
  *
  *     client.cache().close();
  * }</pre>
@@ -122,12 +106,11 @@ import static okhttp3.internal.Util.checkDuration;
  * <p>OkHttp also uses daemon threads for HTTP/2 connections. These will exit automatically if they
  * remain idle.
  */
-public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory {
+public class OkHttpClient implements Cloneable, Call.Factory {
   static final List<Protocol> DEFAULT_PROTOCOLS = Util.immutableList(
-      Protocol.HTTP_2, Protocol.HTTP_1_1);
+       Protocol.HTTP_1_1);
 
-  static final List<ConnectionSpec> DEFAULT_CONNECTION_SPECS = Util.immutableList(
-      ConnectionSpec.MODERN_TLS, ConnectionSpec.CLEARTEXT);
+  static final List<ConnectionSpec> DEFAULT_CONNECTION_SPECS = Util.immutableList(ConnectionSpec.CLEARTEXT);
 
   static {
     Internal.instance = new Internal() {
@@ -139,9 +122,7 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
         builder.addLenient(name, value);
       }
 
-      @Override public void setCache(OkHttpClient.Builder builder, InternalCache internalCache) {
-        builder.setInternalCache(internalCache);
-      }
+
 
       @Override public boolean connectionBecameIdle(
           ConnectionPool pool, RealConnection connection) {
@@ -202,14 +183,10 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
   final List<Interceptor> networkInterceptors;
   final EventListener.Factory eventListenerFactory;
   final ProxySelector proxySelector;
-  final CookieJar cookieJar;
-  final @Nullable Cache cache;
-  final @Nullable InternalCache internalCache;
+
   final SocketFactory socketFactory;
   final @Nullable SSLSocketFactory sslSocketFactory;
-  final @Nullable CertificateChainCleaner certificateChainCleaner;
   final HostnameVerifier hostnameVerifier;
-  final CertificatePinner certificatePinner;
   final Authenticator proxyAuthenticator;
   final Authenticator authenticator;
   final ConnectionPool connectionPool;
@@ -235,28 +212,21 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     this.networkInterceptors = Util.immutableList(builder.networkInterceptors);
     this.eventListenerFactory = builder.eventListenerFactory;
     this.proxySelector = builder.proxySelector;
-    this.cookieJar = builder.cookieJar;
-    this.cache = builder.cache;
-    this.internalCache = builder.internalCache;
+
+
     this.socketFactory = builder.socketFactory;
 
-    boolean isTLS = false;
-    for (ConnectionSpec spec : connectionSpecs) {
-      isTLS = isTLS || spec.isTls();
-    }
 
-    if (builder.sslSocketFactory != null || !isTLS) {
+
+    if (builder.sslSocketFactory != null) {
       this.sslSocketFactory = builder.sslSocketFactory;
-      this.certificateChainCleaner = builder.certificateChainCleaner;
+
     } else {
       X509TrustManager trustManager = systemDefaultTrustManager();
       this.sslSocketFactory = systemDefaultSslSocketFactory(trustManager);
-      this.certificateChainCleaner = CertificateChainCleaner.get(trustManager);
-    }
 
+    }
     this.hostnameVerifier = builder.hostnameVerifier;
-    this.certificatePinner = builder.certificatePinner.withCertificateChainCleaner(
-        certificateChainCleaner);
     this.proxyAuthenticator = builder.proxyAuthenticator;
     this.authenticator = builder.authenticator;
     this.connectionPool = builder.connectionPool;
@@ -331,18 +301,6 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     return proxySelector;
   }
 
-  public CookieJar cookieJar() {
-    return cookieJar;
-  }
-
-  public Cache cache() {
-    return cache;
-  }
-
-  InternalCache internalCache() {
-    return cache != null ? cache.internalCache : internalCache;
-  }
-
   public Dns dns() {
     return dns;
   }
@@ -357,10 +315,6 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
 
   public HostnameVerifier hostnameVerifier() {
     return hostnameVerifier;
-  }
-
-  public CertificatePinner certificatePinner() {
-    return certificatePinner;
   }
 
   public Authenticator authenticator() {
@@ -428,15 +382,6 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     return RealCall.newRealCall(this, request, false /* for web socket */);
   }
 
-  /**
-   * Uses {@code request} to connect a new web socket.
-   */
-  @Override public WebSocket newWebSocket(Request request, WebSocketListener listener) {
-    RealWebSocket webSocket = new RealWebSocket(request, listener, new Random());
-    webSocket.connect(this);
-    return webSocket;
-  }
-
   public Builder newBuilder() {
     return new Builder(this);
   }
@@ -450,14 +395,10 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     final List<Interceptor> networkInterceptors = new ArrayList<>();
     EventListener.Factory eventListenerFactory;
     ProxySelector proxySelector;
-    CookieJar cookieJar;
-    @Nullable Cache cache;
-    @Nullable InternalCache internalCache;
     SocketFactory socketFactory;
     @Nullable SSLSocketFactory sslSocketFactory;
-    @Nullable CertificateChainCleaner certificateChainCleaner;
     HostnameVerifier hostnameVerifier;
-    CertificatePinner certificatePinner;
+
     Authenticator proxyAuthenticator;
     Authenticator authenticator;
     ConnectionPool connectionPool;
@@ -476,10 +417,8 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
       connectionSpecs = DEFAULT_CONNECTION_SPECS;
       eventListenerFactory = EventListener.factory(EventListener.NONE);
       proxySelector = ProxySelector.getDefault();
-      cookieJar = CookieJar.NO_COOKIES;
+
       socketFactory = SocketFactory.getDefault();
-      hostnameVerifier = OkHostnameVerifier.INSTANCE;
-      certificatePinner = CertificatePinner.DEFAULT;
       proxyAuthenticator = Authenticator.NONE;
       authenticator = Authenticator.NONE;
       connectionPool = new ConnectionPool();
@@ -502,14 +441,13 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
       this.networkInterceptors.addAll(okHttpClient.networkInterceptors);
       this.eventListenerFactory = okHttpClient.eventListenerFactory;
       this.proxySelector = okHttpClient.proxySelector;
-      this.cookieJar = okHttpClient.cookieJar;
-      this.internalCache = okHttpClient.internalCache;
-      this.cache = okHttpClient.cache;
+
+
       this.socketFactory = okHttpClient.socketFactory;
       this.sslSocketFactory = okHttpClient.sslSocketFactory;
-      this.certificateChainCleaner = okHttpClient.certificateChainCleaner;
+
       this.hostnameVerifier = okHttpClient.hostnameVerifier;
-      this.certificatePinner = okHttpClient.certificatePinner;
+
       this.proxyAuthenticator = okHttpClient.proxyAuthenticator;
       this.authenticator = okHttpClient.authenticator;
       this.connectionPool = okHttpClient.connectionPool;
@@ -588,31 +526,6 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     }
 
     /**
-     * Sets the handler that can accept cookies from incoming HTTP responses and provides cookies to
-     * outgoing HTTP requests.
-     *
-     * <p>If unset, {@linkplain CookieJar#NO_COOKIES no cookies} will be accepted nor provided.
-     */
-    public Builder cookieJar(CookieJar cookieJar) {
-      if (cookieJar == null) throw new NullPointerException("cookieJar == null");
-      this.cookieJar = cookieJar;
-      return this;
-    }
-
-    /** Sets the response cache to be used to read and write cached responses. */
-    void setInternalCache(@Nullable InternalCache internalCache) {
-      this.internalCache = internalCache;
-      this.cache = null;
-    }
-
-    /** Sets the response cache to be used to read and write cached responses. */
-    public Builder cache(@Nullable Cache cache) {
-      this.cache = cache;
-      this.internalCache = null;
-      return this;
-    }
-
-    /**
      * Sets the DNS service used to lookup IP addresses for hostnames.
      *
      * <p>If unset, the {@link Dns#SYSTEM system-wide default} DNS will be used.
@@ -649,7 +562,6 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
     public Builder sslSocketFactory(SSLSocketFactory sslSocketFactory) {
       if (sslSocketFactory == null) throw new NullPointerException("sslSocketFactory == null");
       this.sslSocketFactory = sslSocketFactory;
-      this.certificateChainCleaner = Platform.get().buildCertificateChainCleaner(sslSocketFactory);
       return this;
     }
 
@@ -688,7 +600,6 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
       if (sslSocketFactory == null) throw new NullPointerException("sslSocketFactory == null");
       if (trustManager == null) throw new NullPointerException("trustManager == null");
       this.sslSocketFactory = sslSocketFactory;
-      this.certificateChainCleaner = CertificateChainCleaner.get(trustManager);
       return this;
     }
 
@@ -704,16 +615,7 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
       return this;
     }
 
-    /**
-     * Sets the certificate pinner that constrains which certificates are trusted. By default HTTPS
-     * connections rely on only the {@link #sslSocketFactory SSL socket factory} to establish trust.
-     * Pinning certificates avoids the need to trust certificate authorities.
-     */
-    public Builder certificatePinner(CertificatePinner certificatePinner) {
-      if (certificatePinner == null) throw new NullPointerException("certificatePinner == null");
-      this.certificatePinner = certificatePinner;
-      return this;
-    }
+
 
     /**
      * Sets the authenticator used to respond to challenges from origin servers. Use {@link
@@ -840,9 +742,6 @@ public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory 
       if (protocols.contains(null)) {
         throw new IllegalArgumentException("protocols must not contain null");
       }
-
-      // Remove protocols that we no longer support.
-      protocols.remove(Protocol.SPDY_3);
 
       // Assign as an unmodifiable list. This is effectively immutable.
       this.protocols = Collections.unmodifiableList(protocols);

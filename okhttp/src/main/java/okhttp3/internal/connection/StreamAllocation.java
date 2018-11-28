@@ -31,9 +31,7 @@ import okhttp3.Route;
 import okhttp3.internal.Internal;
 import okhttp3.internal.Util;
 import okhttp3.internal.http.HttpCodec;
-import okhttp3.internal.http2.ConnectionShutdownException;
-import okhttp3.internal.http2.ErrorCode;
-import okhttp3.internal.http2.StreamResetException;
+
 
 import static okhttp3.internal.Util.closeQuietly;
 
@@ -264,12 +262,6 @@ public final class StreamAllocation {
       // Pool the connection.
       Internal.instance.put(connectionPool, result);
 
-      // If another multiplexed connection to the same address was created concurrently, then
-      // release this connection and acquire that one.
-      if (result.isMultiplexed()) {
-        socket = Internal.instance.deduplicate(connectionPool, address, this);
-        result = connection;
-      }
     }
     closeQuietly(socket);
 
@@ -415,45 +407,7 @@ public final class StreamAllocation {
     }
   }
 
-  public void streamFailed(IOException e) {
-    Socket socket;
-    Connection releasedConnection;
-    boolean noNewStreams = false;
 
-    synchronized (connectionPool) {
-      if (e instanceof StreamResetException) {
-        StreamResetException streamResetException = (StreamResetException) e;
-        if (streamResetException.errorCode == ErrorCode.REFUSED_STREAM) {
-          refusedStreamCount++;
-        }
-        // On HTTP/2 stream errors, retry REFUSED_STREAM errors once on the same connection. All
-        // other errors must be retried on a new connection.
-        if (streamResetException.errorCode != ErrorCode.REFUSED_STREAM || refusedStreamCount > 1) {
-          noNewStreams = true;
-          route = null;
-        }
-      } else if (connection != null
-          && (!connection.isMultiplexed() || e instanceof ConnectionShutdownException)) {
-        noNewStreams = true;
-
-        // If this route hasn't completed a call, avoid it for new connections.
-        if (connection.successCount == 0) {
-          if (route != null && e != null) {
-            routeSelector.connectFailed(route, e);
-          }
-          route = null;
-        }
-      }
-      releasedConnection = connection;
-      socket = deallocate(noNewStreams, false, true);
-      if (connection != null || !reportedAcquired) releasedConnection = null;
-    }
-
-    closeQuietly(socket);
-    if (releasedConnection != null) {
-      eventListener.connectionReleased(call, releasedConnection);
-    }
-  }
 
   /**
    * Use this allocation to hold {@code connection}. Each call to this must be paired with a call to

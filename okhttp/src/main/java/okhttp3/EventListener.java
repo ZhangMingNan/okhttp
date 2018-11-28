@@ -125,33 +125,14 @@ public abstract class EventListener {
   public void secureConnectStart(Call call) {
   }
 
-  /**
-   * Invoked immediately after a TLS connection was attempted.
-   *
-   * <p>This method is invoked after {@link #secureConnectStart}.
-   */
-  public void secureConnectEnd(Call call, @Nullable Handshake handshake) {
-  }
 
-  /**
-   * Invoked immediately after a socket connection was attempted.
-   *
-   * <p>If the {@code call} uses HTTPS, this will be invoked after
-   * {@link #secureConnectEnd(Call, Handshake)}, otherwise it will invoked after
-   * {@link #connectStart(Call, InetSocketAddress, Proxy)}.
-   */
+
+
   public void connectEnd(Call call, InetSocketAddress inetSocketAddress,
       @Nullable Proxy proxy, @Nullable Protocol protocol) {
   }
 
-  /**
-   * Invoked when a connection attempt fails. This failure is not terminal if further routes are
-   * available and failure recovery is enabled.
-   *
-   * <p>If the {@code call} uses HTTPS, this will be invoked after {@link #secureConnectEnd(Call,
-   * Handshake)}, otherwise it will invoked after {@link #connectStart(Call, InetSocketAddress,
-   * Proxy)}.
-   */
+
   public void connectFailed(Call call, InetSocketAddress inetSocketAddress,
       @Nullable Proxy proxy, @Nullable Protocol protocol, @Nullable IOException ioe) {
   }

@@ -46,11 +46,11 @@ public final class Address {
   final @Nullable Proxy proxy;
   final @Nullable SSLSocketFactory sslSocketFactory;
   final @Nullable HostnameVerifier hostnameVerifier;
-  final @Nullable CertificatePinner certificatePinner;
+
 
   public Address(String uriHost, int uriPort, Dns dns, SocketFactory socketFactory,
       @Nullable SSLSocketFactory sslSocketFactory, @Nullable HostnameVerifier hostnameVerifier,
-      @Nullable CertificatePinner certificatePinner, Authenticator proxyAuthenticator,
+       Authenticator proxyAuthenticator,
       @Nullable Proxy proxy, List<Protocol> protocols, List<ConnectionSpec> connectionSpecs,
       ProxySelector proxySelector) {
     this.url = new HttpUrl.Builder()
@@ -82,7 +82,7 @@ public final class Address {
     this.proxy = proxy;
     this.sslSocketFactory = sslSocketFactory;
     this.hostnameVerifier = hostnameVerifier;
-    this.certificatePinner = certificatePinner;
+
   }
 
   /**
@@ -146,10 +146,6 @@ public final class Address {
     return hostnameVerifier;
   }
 
-  /** Returns this address's certificate pinner, or null if this is not an HTTPS address. */
-  public @Nullable CertificatePinner certificatePinner() {
-    return certificatePinner;
-  }
 
   @Override public boolean equals(@Nullable Object other) {
     return other instanceof Address
@@ -168,7 +164,6 @@ public final class Address {
     result = 31 * result + (proxy != null ? proxy.hashCode() : 0);
     result = 31 * result + (sslSocketFactory != null ? sslSocketFactory.hashCode() : 0);
     result = 31 * result + (hostnameVerifier != null ? hostnameVerifier.hashCode() : 0);
-    result = 31 * result + (certificatePinner != null ? certificatePinner.hashCode() : 0);
     return result;
   }
 
@@ -181,7 +176,6 @@ public final class Address {
         && equal(this.proxy, that.proxy)
         && equal(this.sslSocketFactory, that.sslSocketFactory)
         && equal(this.hostnameVerifier, that.hostnameVerifier)
-        && equal(this.certificatePinner, that.certificatePinner)
         && this.url().port() == that.url().port();
   }
 

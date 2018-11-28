@@ -23,8 +23,6 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import okhttp3.Challenge;
-import okhttp3.Cookie;
-import okhttp3.CookieJar;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
@@ -195,14 +193,7 @@ public final class HttpHeaders {
     return challenges;
   }
 
-  public static void receiveHeaders(CookieJar cookieJar, HttpUrl url, Headers headers) {
-    if (cookieJar == CookieJar.NO_COOKIES) return;
 
-    List<Cookie> cookies = Cookie.parseAll(url, headers);
-    if (cookies.isEmpty()) return;
-
-    cookieJar.saveFromResponse(url, cookies);
-  }
 
   /** Returns true if the response must have a (possibly 0-length) body. See RFC 7231. */
   public static boolean hasBody(Response response) {

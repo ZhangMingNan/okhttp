@@ -138,7 +138,6 @@ public final class ConnectionPool {
     assert (Thread.holdsLock(this));
     for (RealConnection connection : connections) {
       if (connection.isEligible(address, null)
-          && connection.isMultiplexed()
           && connection != streamAllocation.connection()) {
         return streamAllocation.releaseAndAcquire(connection);
       }
