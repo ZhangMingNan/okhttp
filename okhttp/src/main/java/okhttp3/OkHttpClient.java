@@ -110,7 +110,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
   static final List<Protocol> DEFAULT_PROTOCOLS = Util.immutableList(
        Protocol.HTTP_1_1);
 
-  static final List<ConnectionSpec> DEFAULT_CONNECTION_SPECS = Util.immutableList(ConnectionSpec.CLEARTEXT);
+
 
   static {
     Internal.instance = new Internal() {
@@ -155,10 +155,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
         return responseBuilder.code;
       }
 
-      @Override
-      public void apply(ConnectionSpec tlsConfiguration, SSLSocket sslSocket, boolean isFallback) {
-        tlsConfiguration.apply(sslSocket, isFallback);
-      }
+
 
       @Override public HttpUrl getHttpUrlChecked(String url)
           throws MalformedURLException, UnknownHostException {
@@ -178,7 +175,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
   final Dispatcher dispatcher;
   final @Nullable Proxy proxy;
   final List<Protocol> protocols;
-  final List<ConnectionSpec> connectionSpecs;
+
   final List<Interceptor> interceptors;
   final List<Interceptor> networkInterceptors;
   final EventListener.Factory eventListenerFactory;
@@ -207,7 +204,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     this.dispatcher = builder.dispatcher;
     this.proxy = builder.proxy;
     this.protocols = builder.protocols;
-    this.connectionSpecs = builder.connectionSpecs;
+
     this.interceptors = Util.immutableList(builder.interceptors);
     this.networkInterceptors = Util.immutableList(builder.networkInterceptors);
     this.eventListenerFactory = builder.eventListenerFactory;
@@ -349,9 +346,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     return protocols;
   }
 
-  public List<ConnectionSpec> connectionSpecs() {
-    return connectionSpecs;
-  }
+
 
   /**
    * Returns an immutable list of interceptors that observe the full span of each call: from before
@@ -390,7 +385,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     Dispatcher dispatcher;
     @Nullable Proxy proxy;
     List<Protocol> protocols;
-    List<ConnectionSpec> connectionSpecs;
+
     final List<Interceptor> interceptors = new ArrayList<>();
     final List<Interceptor> networkInterceptors = new ArrayList<>();
     EventListener.Factory eventListenerFactory;
@@ -414,7 +409,6 @@ public class OkHttpClient implements Cloneable, Call.Factory {
     public Builder() {
       dispatcher = new Dispatcher();
       protocols = DEFAULT_PROTOCOLS;
-      connectionSpecs = DEFAULT_CONNECTION_SPECS;
       eventListenerFactory = EventListener.factory(EventListener.NONE);
       proxySelector = ProxySelector.getDefault();
 
@@ -435,7 +429,7 @@ public class OkHttpClient implements Cloneable, Call.Factory {
       this.dispatcher = okHttpClient.dispatcher;
       this.proxy = okHttpClient.proxy;
       this.protocols = okHttpClient.protocols;
-      this.connectionSpecs = okHttpClient.connectionSpecs;
+
       this.interceptors.addAll(okHttpClient.interceptors);
       this.networkInterceptors.addAll(okHttpClient.networkInterceptors);
       this.eventListenerFactory = okHttpClient.eventListenerFactory;
@@ -723,11 +717,6 @@ public class OkHttpClient implements Cloneable, Call.Factory {
 
       // Assign as an unmodifiable list. This is effectively immutable.
       this.protocols = Collections.unmodifiableList(protocols);
-      return this;
-    }
-
-    public Builder connectionSpecs(List<ConnectionSpec> connectionSpecs) {
-      this.connectionSpecs = Util.immutableList(connectionSpecs);
       return this;
     }
 

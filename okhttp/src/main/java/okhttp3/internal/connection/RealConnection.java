@@ -16,52 +16,28 @@
  */
 package okhttp3.internal.connection;
 
-import java.io.IOException;
-import java.lang.ref.Reference;
-import java.net.ConnectException;
-import java.net.ProtocolException;
-import java.net.Proxy;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownServiceException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.Nullable;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-
-import okhttp3.Address;
-import okhttp3.Call;
-import okhttp3.Connection;
-import okhttp3.ConnectionPool;
-import okhttp3.ConnectionSpec;
-import okhttp3.EventListener;
-import okhttp3.HttpUrl;
-import okhttp3.Interceptor;
-import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.Route;
+import okhttp3.*;
 import okhttp3.internal.Internal;
 import okhttp3.internal.Util;
-
 import okhttp3.internal.http.HttpCodec;
 import okhttp3.internal.http.HttpHeaders;
 import okhttp3.internal.http1.Http1Codec;
-
 import okhttp3.internal.platform.Platform;
-
-
 import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
 import okio.Source;
 
+import javax.annotation.Nullable;
+import javax.net.ssl.SSLSocket;
+import java.io.IOException;
+import java.lang.ref.Reference;
+import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.net.HttpURLConnection.HTTP_PROXY_AUTH;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static okhttp3.internal.Util.closeQuietly;
 
@@ -132,14 +108,8 @@ public final class RealConnection implements Connection {
         if (protocol != null) throw new IllegalStateException("already connected");
 
         RouteException routeException = null;
-        List<ConnectionSpec> connectionSpecs = route.address().connectionSpecs();
-        ConnectionSpecSelector connectionSpecSelector = new ConnectionSpecSelector(connectionSpecs);
 
         if (route.address().sslSocketFactory() == null) {
-            if (!connectionSpecs.contains(ConnectionSpec.CLEARTEXT)) {
-                throw new RouteException(new UnknownServiceException(
-                        "CLEARTEXT communication not enabled for client"));
-            }
             String host = route.address().url().host();
             if (!Platform.get().isCleartextTrafficPermitted(host)) {
                 throw new RouteException(new UnknownServiceException(
@@ -158,7 +128,7 @@ public final class RealConnection implements Connection {
                 } else {
                     connectSocket(connectTimeout, readTimeout, call, eventListener);
                 }
-                establishProtocol(connectionSpecSelector, call, eventListener);
+                establishProtocol( call, eventListener);
                 eventListener.connectEnd(call, route.socketAddress(), route.proxy(), protocol);
                 break;
             } catch (IOException e) {
@@ -178,9 +148,6 @@ public final class RealConnection implements Connection {
                     routeException.addConnectException(e);
                 }
 
-                if (!connectionRetryEnabled || !connectionSpecSelector.connectionFailed(e)) {
-                    throw routeException;
-                }
             }
         }
 
@@ -252,7 +219,7 @@ public final class RealConnection implements Connection {
         }
     }
 
-    private void establishProtocol(ConnectionSpecSelector connectionSpecSelector, Call call,
+    private void establishProtocol( Call call,
                                    EventListener eventListener) throws IOException {
         if (route.address().sslSocketFactory() == null) {
             protocol = Protocol.HTTP_1_1;
@@ -261,56 +228,9 @@ public final class RealConnection implements Connection {
         }
 
         eventListener.secureConnectStart(call);
-        connectTls(connectionSpecSelector);
-
-
     }
 
-    private void connectTls(ConnectionSpecSelector connectionSpecSelector) throws IOException {
-        Address address = route.address();
-        SSLSocketFactory sslSocketFactory = address.sslSocketFactory();
-        boolean success = false;
-        SSLSocket sslSocket = null;
-        try {
-            // Create the wrapper over the connected socket.
-            sslSocket = (SSLSocket) sslSocketFactory.createSocket(
-                    rawSocket, address.url().host(), address.url().port(), true /* autoClose */);
 
-            // Configure the socket's ciphers, TLS versions, and extensions.
-            ConnectionSpec connectionSpec = connectionSpecSelector.configureSecureSocket(sslSocket);
-            if (connectionSpec.supportsTlsExtensions()) {
-                Platform.get().configureTlsExtensions(
-                        sslSocket, address.url().host(), address.protocols());
-            }
-
-            // Force handshake. This can throw!
-            sslSocket.startHandshake();
-
-
-            // Success! Save the handshake and the ALPN protocol.
-            String maybeProtocol = connectionSpec.supportsTlsExtensions()
-                    ? Platform.get().getSelectedProtocol(sslSocket)
-                    : null;
-            socket = sslSocket;
-            source = Okio.buffer(Okio.source(socket));
-            sink = Okio.buffer(Okio.sink(socket));
-
-            protocol = maybeProtocol != null
-                    ? Protocol.get(maybeProtocol)
-                    : Protocol.HTTP_1_1;
-            success = true;
-        } catch (AssertionError e) {
-            if (Util.isAndroidGetsocknameError(e)) throw new IOException(e);
-            throw e;
-        } finally {
-            if (sslSocket != null) {
-                Platform.get().afterHandshake(sslSocket);
-            }
-            if (!success) {
-                closeQuietly(sslSocket);
-            }
-        }
-    }
 
     /**
      * To make an HTTPS connection over an HTTP proxy, send an unencrypted CONNECT request to create

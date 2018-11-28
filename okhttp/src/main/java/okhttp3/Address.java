@@ -41,7 +41,7 @@ public final class Address {
   final SocketFactory socketFactory;
 
   final List<Protocol> protocols;
-  final List<ConnectionSpec> connectionSpecs;
+
   final ProxySelector proxySelector;
   final @Nullable Proxy proxy;
   final @Nullable SSLSocketFactory sslSocketFactory;
@@ -50,7 +50,7 @@ public final class Address {
 
   public Address(String uriHost, int uriPort, Dns dns, SocketFactory socketFactory,
       @Nullable SSLSocketFactory sslSocketFactory, @Nullable HostnameVerifier hostnameVerifier,
-      @Nullable Proxy proxy, List<Protocol> protocols, List<ConnectionSpec> connectionSpecs,
+      @Nullable Proxy proxy, List<Protocol> protocols,
       ProxySelector proxySelector) {
     this.url = new HttpUrl.Builder()
         .scheme(sslSocketFactory != null ? "https" : "http")
@@ -69,8 +69,7 @@ public final class Address {
     if (protocols == null) throw new NullPointerException("protocols == null");
     this.protocols = Util.immutableList(protocols);
 
-    if (connectionSpecs == null) throw new NullPointerException("connectionSpecs == null");
-    this.connectionSpecs = Util.immutableList(connectionSpecs);
+
 
     if (proxySelector == null) throw new NullPointerException("proxySelector == null");
     this.proxySelector = proxySelector;
@@ -109,9 +108,7 @@ public final class Address {
     return protocols;
   }
 
-  public List<ConnectionSpec> connectionSpecs() {
-    return connectionSpecs;
-  }
+
 
   /**
    * Returns this address's proxy selector. Only used if the proxy is null. If none of this
@@ -152,7 +149,7 @@ public final class Address {
     result = 31 * result + dns.hashCode();
 
     result = 31 * result + protocols.hashCode();
-    result = 31 * result + connectionSpecs.hashCode();
+
     result = 31 * result + proxySelector.hashCode();
     result = 31 * result + (proxy != null ? proxy.hashCode() : 0);
     result = 31 * result + (sslSocketFactory != null ? sslSocketFactory.hashCode() : 0);
@@ -163,7 +160,7 @@ public final class Address {
   boolean equalsNonHost(Address that) {
     return this.dns.equals(that.dns)
         && this.protocols.equals(that.protocols)
-        && this.connectionSpecs.equals(that.connectionSpecs)
+
         && this.proxySelector.equals(that.proxySelector)
         && equal(this.proxy, that.proxy)
         && equal(this.sslSocketFactory, that.sslSocketFactory)

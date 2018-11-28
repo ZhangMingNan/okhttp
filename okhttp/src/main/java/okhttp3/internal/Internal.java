@@ -22,7 +22,6 @@ import javax.net.ssl.SSLSocket;
 import okhttp3.Address;
 import okhttp3.Call;
 import okhttp3.ConnectionPool;
-import okhttp3.ConnectionSpec;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -68,9 +67,6 @@ public abstract class Internal {
   public abstract RouteDatabase routeDatabase(ConnectionPool connectionPool);
 
   public abstract int code(Response.Builder responseBuilder);
-
-  public abstract void apply(ConnectionSpec tlsConfiguration, SSLSocket sslSocket,
-      boolean isFallback);
 
   public abstract HttpUrl getHttpUrlChecked(String url)
       throws MalformedURLException, UnknownHostException;
